@@ -18,7 +18,7 @@ class Question:
                  challenge_reason: Optional[str] = None, createdBy: Optional[str] = None,
                  vector: Optional[List[float]] = None, llm_model: Optional[str] = None,
                  difficult_unique_rate: float = 0.0, question_type_id: Optional[int] = None,
-                 law_id: Optional[str] = None, tutor: Optional[str] = None):
+                 law_id: Optional[str] = None, tutor: Optional[str] = None, embedding_model: Optional[str] =None):
 
         self.id = id
         self.question = question
@@ -53,6 +53,7 @@ class Question:
         self.question_type_id = question_type_id
         self.law_id = law_id
         self.tutor = tutor  # UUID
+        self.embedding_model = embedding_model  # Modelo de embeddings utilizado
 
     @classmethod
     def from_json(cls, data: dict):
@@ -93,8 +94,6 @@ class Question:
             'difficult_rate': self.difficult_rate,
             'challenge_by_tutor': self.challenge_by_tutor,
             'difficult_unique_rate': self.difficult_unique_rate,
-
-
         }
 
     def to_db_dict(self):
@@ -182,11 +181,29 @@ class Question:
             difficult_unique_rate=kwargs.get('difficult_unique_rate', self.difficult_unique_rate),
             question_type_id=kwargs.get('question_type_id', self.question_type_id),
             law_id=kwargs.get('law_id', self.law_id),
-            tutor=kwargs.get('tutor', self.tutor)
+            tutor=kwargs.get('tutor', self.tutor),
+            embedding_model=kwargs.get('embedding_model', self.embedding_model)
         )
 
+    def get_text_to_embedding(self) -> str:
+        """
+        Prepara el texto de la pregunta y respuestas para generar embeddings.
+        Retorna el texto combinado de la pregunta y la respuesta correcta.
+        """
+        texts = [self.question, [self.answer1, self.answer2, self.answer3][self.solution - 1]]
+        return ' '.join(texts).strip()
     def __str__(self):
         return f"Question(id={self.id}, question='{self.question[:50]}...', topic={self.topic})"
 
     def __repr__(self):
         return self.__str__()
+
+    def to_json_vector(self):
+        """
+        Convierte la instancia a un diccionario JSON incluyendo el vector.
+        Excluye campos que no son necesarios para el vector.
+        """
+        return {
+            'vector': self.vector,
+            'embedding_model': self.embedding_model,
+        }
